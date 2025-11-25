@@ -20,6 +20,18 @@ const product: ProductType = {
   },
 };
 
+// COME BACK TO THIS LATER!!!!---------
+export const generateMetadata = async ({
+  params,
+}: {
+  params: { id: string };
+}) => {
+    return {
+        title: product.name,
+        description: product.shortDescription,
+    }
+};
+
 const ProductPage = async ({
   params,
   searchParams,
@@ -47,7 +59,7 @@ const ProductPage = async ({
         <h1 className="text-2xl font-medium">{product.name}</h1>
         <p className="text-gray-500">{product.description}</p>
         <h2 className="text-2xl font-semibold">${product.price.toFixed(2)}</h2>
-        
+
         <ProductInteraction
           product={product}
           selectedSize={selectedSize}
