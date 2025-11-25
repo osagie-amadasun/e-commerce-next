@@ -6,7 +6,7 @@ import ShoppingCartIcon from "./ShoppingCartIcon";
 
 const Navbar = () => {
   return (
-    <nav className="w-full flex items-center justify-between border-b border-gray-200 pb-4">
+    <nav className="w-full flex items-center justify-between border-b border-gray-200 pt-2 pb-4 sticky top-0 bg-white/40 backdrop-blur-md z-50">
       <Link href="/" className="flex items-center">
         <Image
           src="/logo.png"
