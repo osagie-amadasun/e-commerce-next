@@ -4,14 +4,18 @@ import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 
 const ShoppingCartIcon = () => {
-  const {cart} = useCartStore()
-  console.log(cart)
+  const { cart, hasHydrated } = useCartStore();
+  console.log(cart);
+
+  if (!hasHydrated) return null;
 
   return (
     <div>
       <Link href={"/cart"} className="relative">
         <ShoppingCart className="w-5 h-5 text-gray-600" />
-        <span className="absolute -top-3 -right-3 bg-amber-400 text-gray-600 rounded-full w-4 h-4 flex items-center justify-center text-xs font-medium">{cart.length}</span>
+        <span className="absolute -top-3 -right-3 bg-amber-400 text-gray-600 rounded-full w-4 h-4 flex items-center justify-center text-xs font-medium">
+          {cart.reduce((acc, cartItem) => acc + cartItem.quantity, 0)}
+        </span>
       </Link>
     </div>
   );
