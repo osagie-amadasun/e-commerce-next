@@ -1,3 +1,36 @@
+/**
+ * Cart Page Component
+ * 
+ * This page displays the shopping cart with a multi-step checkout process.
+ * 
+ * IMPORTANT FIX APPLIED:
+ * ======================
+ * This file was refactored to fix a Next.js build error that was preventing deployment.
+ * 
+ * ORIGINAL PROBLEM:
+ * - Build error: "useSearchParams() should be wrapped in a suspense boundary at page '/cart'"
+ * - Error occurred during: Next.js build/prerender phase
+ * - Root cause: useSearchParams() hook was used directly in the page component without Suspense
+ * 
+ * WHY THE ERROR OCCURRED:
+ * - Next.js attempts to statically generate pages at build time for better performance
+ * - useSearchParams() reads URL query parameters which are only available at request/runtime
+ * - This creates a conflict: static generation vs. dynamic runtime data
+ * - Without Suspense, Next.js doesn't know how to handle this dynamic requirement during build
+ * 
+ * THE SOLUTION:
+ * - Split the component: Extracted logic into CartContent (uses useSearchParams) 
+ * - Added Suspense wrapper: Created CartPage to wrap CartContent with Suspense boundary
+ * - This tells Next.js: "This section is dynamic, handle it appropriately at runtime"
+ * 
+ * RESULT:
+ * - Build now succeeds without errors
+ * - Page still works exactly the same for users
+ * - Follows Next.js best practices for dynamic content
+ * 
+ * For more details, see comments in CartContent and CartPage components below.
+ */
+
 "use client";
 
 import PaymentForm from "@/components/PaymentForm";
@@ -7,7 +40,14 @@ import { ShippingData } from "@/types";
 import { ArrowRight, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+// IMPORTANT: Added Suspense to the React imports
+// This is required to wrap components that use useSearchParams() hook
+// Problem: Next.js 13+ requires that any component using useSearchParams() must be wrapped
+//          in a Suspense boundary. This is because useSearchParams() causes the component
+//          to opt-out of static rendering and makes it dynamically rendered at request time.
+//          Without Suspense, Next.js cannot properly handle the async nature of reading
+//          search parameters during the build/prerender phase, causing build failures.
+import { Suspense, useState } from "react";
 
 const steps = [
   {
@@ -80,13 +120,37 @@ const steps = [
 //   },
 // ];
 
-const CartPage = () => {
+/**
+ * CartContent Component - Contains the main cart logic that uses useSearchParams()
+ * 
+ * WHY THIS COMPONENT EXISTS:
+ * - We extracted the original CartPage component logic into this separate component
+ * - This component uses useSearchParams() hook which requires a Suspense boundary wrapper
+ * - By separating it, we can wrap it in Suspense in the parent CartPage component
+ * 
+ * THE PROBLEM IT SOLVES:
+ * - Next.js build process failed with error: "useSearchParams() should be wrapped in a suspense boundary"
+ * - This happened because Next.js tries to statically generate pages at build time
+ * - useSearchParams() reads URL search parameters which are only available at runtime
+ * - Without Suspense, Next.js can't handle this dynamic behavior during build/prerender
+ * - The Suspense boundary tells Next.js: "This part is dynamic, show a fallback while it loads"
+ * 
+ * TECHNICAL DETAILS:
+ * - This is a client component ("use client" at top of file)
+ * - It reads the "step" query parameter to determine which checkout step to show
+ * - The step determines what content is rendered (cart items, shipping form, or payment form)
+ */
+const CartContent = () => {
+  // This hook reads URL search parameters (e.g., ?step=2)
+  // It requires the component to be wrapped in Suspense because it's dynamic
   const searchParams = useSearchParams();
   const router = useRouter();
   const [shippingForm, setShippingForm] = useState<ShippingData | null>(null);
 
   const { cart, removeFromCart } = useCartStore();
 
+  // Parse the "step" query parameter from the URL to determine the active checkout step
+  // Defaults to step 1 if no step parameter is present
   const activeStep = parseInt(searchParams.get("step") || "1");
 
   return (
@@ -221,6 +285,51 @@ const CartPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+/**
+ * CartPage Component - Main page component that wraps CartContent in Suspense
+ * 
+ * WHY THIS COMPONENT EXISTS:
+ * - This is the actual page component exported as default (Next.js requirement)
+ * - It serves as a wrapper that provides the required Suspense boundary
+ * - The Suspense boundary is mandatory when child components use useSearchParams()
+ * 
+ * THE SOLUTION TO THE BUILD ERROR:
+ * - Original problem: Build failed because useSearchParams() was used directly in the page component
+ *   without a Suspense boundary, causing Next.js to fail during static generation
+ * - Solution: Split the logic into CartContent (uses useSearchParams) and CartPage (provides Suspense)
+ * - The Suspense boundary tells Next.js: "This component tree needs search params, which are dynamic,
+ *   so don't try to statically generate it - render it at request time instead"
+ * 
+ * HOW IT WORKS:
+ * - During build/prerender: Next.js sees the Suspense boundary and knows this part is dynamic
+ * - It renders the fallback UI during the build phase (static generation)
+ * - At runtime: When a user visits the page, React suspends rendering, reads the search params,
+ *   then renders CartContent with the actual step value from the URL
+ * - The fallback is shown only if there's a delay reading search params (rare, but handled gracefully)
+ * 
+ * BENEFITS:
+ * - Fixes the build error that was preventing deployment
+ * - Maintains proper Next.js rendering behavior (static where possible, dynamic where needed)
+ * - Provides a better user experience with a loading fallback
+ * - Follows Next.js best practices for handling dynamic content
+ */
+const CartPage = () => {
+  return (
+    <Suspense 
+      // Fallback UI shown while search parameters are being read
+      // This is especially important during SSR/hydration when params might not be immediately available
+      fallback={
+        <div className="flex items-center justify-center mt-12">
+          <div className="text-lg">Loading cart...</div>
+        </div>
+      }
+    >
+      {/* CartContent uses useSearchParams(), so it must be wrapped in Suspense */}
+      <CartContent />
+    </Suspense>
   );
 };
 
