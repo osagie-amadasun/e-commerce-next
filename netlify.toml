@@ -29,7 +29,6 @@
   # Next.js will build the production-ready version of your app
   command = "npm run build"
 
-  publish = "client/.next"
 
 # Next.js Plugin Configuration
 # This plugin is essential for proper Next.js deployment on Netlify
