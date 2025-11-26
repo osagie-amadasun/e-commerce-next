@@ -1,7 +1,65 @@
+# Netlify Configuration File
+# This file configures how Netlify builds and deploys your Next.js application
+
 [build]
+  # CRITICAL: Set the base directory to "client"
+  # 
+  # PROBLEM SOLVED:
+  # - Netlify was trying to build from the repository root directory
+  # - Your Next.js app is actually located in the "client/" subdirectory
+  # - Netlify couldn't find package.json because it was looking in the wrong place
+  # - Build error: "Could not read package.json: ENOENT: no such file or directory"
+  # 
+  # WHY THIS EXISTS:
+  # Your project structure is:
+  #   / (repository root)
+  #     ├── client/          ← Your Next.js app is here
+  #     │   ├── package.json ← Netlify needs to find this
+  #     │   └── src/
+  #     └── admin/           ← Separate admin app (not being deployed)
+  #
+  # SOLUTION:
+  # Setting base = "client" tells Netlify to change to the client directory
+  # before running any build commands. This ensures package.json and all other
+  # Next.js files are found in the correct location.
   base = "client"
+  
+  # Build command to run
+  # This runs "npm run build" inside the "client" directory (due to base setting above)
+  # Next.js will build the production-ready version of your app
   command = "npm run build"
 
+  publish = "client/.next"
+
+# Next.js Plugin Configuration
+# This plugin is essential for proper Next.js deployment on Netlify
 [[plugins]]
+  # Plugin: Netlify's official Next.js plugin
+  # 
+  # WHY THIS PLUGIN IS NEEDED:
+  # - Next.js 13+ uses the App Router with server components, API routes, etc.
+  # - Netlify needs special handling for Next.js features like:
+  #   * Server-side rendering (SSR)
+  #   * API routes (/api/* endpoints)
+  #   * Dynamic routes with proper routing
+  #   * Image optimization
+  #   * Incremental Static Regeneration (ISR)
+  #
+  # WHAT IT DOES:
+  # - Automatically configures Netlify to handle Next.js-specific features
+  # - Sets up proper routing for dynamic routes
+  # - Handles server functions and API routes correctly
+  # - Manages the build output directory automatically
+  # - No need to manually specify publish directory (plugin handles it)
+  #
+  # WITHOUT THIS PLUGIN:
+  # - Your Next.js app might not work correctly on Netlify
+  # - API routes might fail
+  # - Dynamic routing might break
+  # - Server components might not function properly
+  #
+  # NOTE: This plugin must be installed. Netlify will install it automatically
+  #       if it's listed here, or you can install it manually with:
+  #       npm install --save-dev @netlify/plugin-nextjs
   package = "@netlify/plugin-nextjs"
 
