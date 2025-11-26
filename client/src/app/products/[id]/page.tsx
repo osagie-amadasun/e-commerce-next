@@ -24,12 +24,13 @@ const product: ProductType = {
 export const generateMetadata = async ({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) => {
-    return {
-        title: product.name,
-        description: product.shortDescription,
-    }
+  const { id } = await params;
+  return {
+    title: product.name,
+    description: product.shortDescription,
+  };
 };
 
 const ProductPage = async ({
